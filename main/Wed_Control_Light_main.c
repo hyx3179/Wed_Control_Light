@@ -23,11 +23,6 @@ float phase[2] = {
 
 void app_main(void)
 {
-
-    pwm_init(PWM_PERIOD, duties, 2, pin_num);
-    pwm_set_phases(phase);
-    pwm_start();
-
     esp_err_t ret;
 
     // Initialize NVS.
@@ -43,5 +38,8 @@ void app_main(void)
     /* Start the file server */
     configure_server();
 
+    pwm_init(PWM_PERIOD, duties, 2, pin_num);
+    pwm_set_phases(phase);
+    pwm_start();
 
 }

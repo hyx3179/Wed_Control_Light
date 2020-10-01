@@ -1,12 +1,15 @@
+#include <string.h>
 #include "esp_err.h"
 #include "esp_log.h"
 #include "esp_http_server.h"
+#include "nvs_flash.h"
 
 #include "driver/pwm.h"
 
 #include "Wed_Control_Light_main.h"
 
 #define TAG "configure_server"
+#define WIFI_TAG "wifi_connect"
 
 static esp_err_t favicon_get_handler(httpd_req_t *req)
 {
@@ -32,12 +35,19 @@ static esp_err_t http_resp_dir_html(httpd_req_t *req)
 
 static esp_err_t huang_handler(httpd_req_t *req)
 {
-    // const char* resp_str = (const char*) req->user_ctx;
+    char buf[16] = {0};
 
-    pwm_set_duty(0,(uint32_t) req->user_ctx);
+    httpd_req_recv(req, buf, req->content_len);
+
+    int duty_len = strlen(buf) - 5;
+    char duty[duty_len + 1];
+    memset(duty, 0, duty_len + 1);
+    memcpy(&duty, buf + 5, duty_len);
+
+    pwm_set_duty(0,atoi(duty));
     pwm_start();
 
-    ESP_LOGI(TAG, "%d",(uint32_t) req->user_ctx);
+    ESP_LOGI(TAG, duty);
     httpd_resp_set_status(req, "303 See Other");
     httpd_resp_set_hdr(req, "Location", "/");
     httpd_resp_sendstr(req, "File uploaded successfully");
@@ -46,48 +56,57 @@ static esp_err_t huang_handler(httpd_req_t *req)
 
 static esp_err_t bai_handler(httpd_req_t *req)
 {
-    // const char* resp_str = (const char*) req->user_ctx;
+    char buf[16] = {0};
 
-    pwm_set_duty(1,(uint32_t) req->user_ctx);
+    httpd_req_recv(req, buf, req->content_len);
+
+    int duty_len = strlen(buf) - 5;
+    char duty[duty_len + 1];
+    memset(duty, 0, duty_len + 1);
+    memcpy(&duty, buf + 5, duty_len);
+
+    pwm_set_duty(1,atoi(duty));
     pwm_start();
 
-    ESP_LOGI(TAG, "%d",(uint32_t) req->user_ctx);
+    ESP_LOGI(TAG, duty);
     httpd_resp_set_status(req, "303 See Other");
     httpd_resp_set_hdr(req, "Location", "/");
     httpd_resp_sendstr(req, "File uploaded successfully");
     return ESP_OK;
 }
 
-#define MIN(a,b) (((a)<(b))?(a):(b))
-
 static esp_err_t wifi_handler(httpd_req_t *req)
 {
-    char buf[100];
-    int ret, remaining = req->content_len;
+    char buf[128] = {0};
+    char *passwed_p = "&PASSWORD=";
 
-    while (remaining > 0) {
-        /* Read the data for the request */
-        if ((ret = httpd_req_recv(req, buf,
-                        MIN(remaining, sizeof(buf)))) <= 0) {
-            if (ret == HTTPD_SOCK_ERR_TIMEOUT) {
-                /* Retry receiving if timeout occurred */
-                continue;
-            }
-            return ESP_FAIL;
-        }
+    httpd_req_recv(req, buf, req->content_len);
+    passwed_p = strstr(buf, passwed_p);
 
-        /* Send back the same data */
-        httpd_resp_send_chunk(req, buf, ret);
-        remaining -= ret;
+    int ssid_len = passwed_p - buf - 5;
+    char ssid[ssid_len + 1];
+    memset(ssid, 0, ssid_len + 1);
+    memcpy(&ssid, buf + 5, ssid_len);
 
-        /* Log data received */
-        ESP_LOGI(TAG, "=========== RECEIVED DATA ==========");
-        ESP_LOGI(TAG, "%.*s", ret, buf);
-        ESP_LOGI(TAG, "====================================");
-    }
+    int passwed_len = strlen(buf) - ssid_len - 11;
+    char passwed[passwed_len + 1];
+    memset(passwed, 0, passwed_len + 1);
+    memcpy(&passwed, buf + 5 + ssid_len + 10, passwed_len);
 
-    // End response
-    httpd_resp_send_chunk(req, NULL, 0);
+    nvs_handle handle;
+    ESP_ERROR_CHECK(nvs_open(WIFI_TAG, NVS_READWRITE, &handle));
+    ESP_ERROR_CHECK(nvs_set_str(handle, "STA_SSID", ssid));
+    ESP_ERROR_CHECK(nvs_set_str(handle, "STA_PASSWORD", passwed));
+
+    ESP_ERROR_CHECK(nvs_commit(handle));
+    nvs_close(handle);
+
+    ESP_LOGI(TAG, ssid);
+    ESP_LOGI(TAG, passwed);
+
+    httpd_resp_set_status(req, "303 See Other");
+    httpd_resp_set_hdr(req, "Location", "/");
+    httpd_resp_sendstr(req, "File uploaded successfully");
     return ESP_OK;
 }
 
@@ -96,7 +115,6 @@ esp_err_t configure_server()
 {
     httpd_handle_t server = NULL;
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
-    config.max_uri_handlers = 15;
 
     ESP_LOGI(TAG, "Starting HTTP Server");
     if (httpd_start(&server, &config) != ESP_OK) {
@@ -130,59 +148,19 @@ esp_err_t configure_server()
     httpd_register_uri_handler(server, &wifi);
 
     httpd_uri_t huang = {
-        .uri = "/huang_0",
+        .uri = "/huang",
         .method = HTTP_POST,
         .handler = huang_handler,
-        .user_ctx = (uint32_t*) 0
+        .user_ctx = NULL
     };
-    httpd_register_uri_handler(server, &huang);
-
-    huang.uri = "/huang_20";
-    huang.user_ctx = (uint32_t*) 20;
-    httpd_register_uri_handler(server, &huang);
-
-    huang.uri = "/huang_40";
-    huang.user_ctx = (uint32_t*) 40;
-    httpd_register_uri_handler(server, &huang);
-
-    huang.uri = "/huang_60";
-    huang.user_ctx = (uint32_t*) 60;
-    httpd_register_uri_handler(server, &huang);
-
-    huang.uri = "/huang_80";
-    huang.user_ctx = (uint32_t*) 80;
-    httpd_register_uri_handler(server, &huang);
-
-    huang.uri = "/huang_100";
-    huang.user_ctx = (uint32_t*) 100;
     httpd_register_uri_handler(server, &huang);
 
     httpd_uri_t bai = {
-        .uri = "/bai_0",
+        .uri = "/bai",
         .method = HTTP_POST,
         .handler = bai_handler,
-        .user_ctx = (uint32_t*) 0
+        .user_ctx = NULL
     };
-    httpd_register_uri_handler(server, &bai);
-    
-    bai.uri = "/bai_20";
-    bai.user_ctx = (uint32_t*) 20;
-    httpd_register_uri_handler(server, &bai);
-
-    bai.uri = "/bai_40";
-    bai.user_ctx = (uint32_t*) 40;
-    httpd_register_uri_handler(server, &bai);
-
-    bai.uri = "/bai_60";
-    bai.user_ctx = (uint32_t*) 60;
-    httpd_register_uri_handler(server, &bai);
-
-    bai.uri = "/bai_80";
-    bai.user_ctx = (uint32_t*) 80;
-    httpd_register_uri_handler(server, &bai);
-
-    bai.uri = "/bai_100";
-    bai.user_ctx = (uint32_t*) 100;
     httpd_register_uri_handler(server, &bai);
 
     return ESP_OK;
