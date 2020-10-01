@@ -2,6 +2,8 @@
 #include "esp_log.h"
 #include "esp_http_server.h"
 
+#include "driver/pwm.h"
+
 #include "Wed_Control_Light_main.h"
 
 #define TAG "configure_server"
@@ -18,22 +20,39 @@ static esp_err_t favicon_get_handler(httpd_req_t *req)
 
 static esp_err_t http_resp_dir_html(httpd_req_t *req)
 {
-    /* Send HTML file header */
-    httpd_resp_sendstr_chunk(req, "<!DOCTYPE html><html><body>");
-
-    /* Get handle to embedded file upload script */
     extern const unsigned char upload_script_start[] asm("_binary_upload_script_html_start");
     extern const unsigned char upload_script_end[]   asm("_binary_upload_script_html_end");
     const size_t upload_script_size = (upload_script_end - upload_script_start);
 
-    /* Add file upload form and script which on execution sends a POST request to /upload */
     httpd_resp_send_chunk(req, (const char *)upload_script_start, upload_script_size);
 
-    /* Send remaining chunk of HTML file to complete it */
-    httpd_resp_sendstr_chunk(req, "</body></html>");
-
-    /* Send empty chunk to signal HTTP response completion */
     httpd_resp_sendstr_chunk(req, NULL);
+    return ESP_OK;
+}
+
+static esp_err_t huang_handler(httpd_req_t *req)
+{
+    const char* resp_str = (const char*) req->user_ctx;
+
+    pwm_set_duty(0,10);
+
+    ESP_LOGI(TAG, resp_str);
+    httpd_resp_set_status(req, "303 See Other");
+    httpd_resp_set_hdr(req, "Location", "/");
+    httpd_resp_sendstr(req, "File uploaded successfully");
+    return ESP_OK;
+}
+
+static esp_err_t bai_handler(httpd_req_t *req)
+{
+    const char* resp_str = (const char*) req->user_ctx;
+
+    pwm_set_duty(1,10);
+
+    ESP_LOGI(TAG, resp_str);
+    httpd_resp_set_status(req, "303 See Other");
+    httpd_resp_set_hdr(req, "Location", "/");
+    httpd_resp_sendstr(req, "File uploaded successfully");
     return ESP_OK;
 }
 
@@ -42,6 +61,7 @@ esp_err_t configure_server()
 {
     httpd_handle_t server = NULL;
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+    config.max_uri_handlers = 14;
 
     ESP_LOGI(TAG, "Starting HTTP Server");
     if (httpd_start(&server, &config) != ESP_OK) {
@@ -66,39 +86,61 @@ esp_err_t configure_server()
     };
     httpd_register_uri_handler(server, &favicon_get);
 
-    // /* URI handler for uploading files to server */
-    // httpd_uri_t file_upload = {
-    //     .uri = "/upload/*",   // Match all URIs of type /upload/path/to/file
-    //     .method = HTTP_POST,
-    //     .handler = upload_post_handler,
-    //     .user_ctx = NULL    // Pass server data as context
-    // };
-    // httpd_register_uri_handler(server, &file_upload);
+    httpd_uri_t huang = {
+        .uri = "/huang_0",
+        .method = HTTP_POST,
+        .handler = huang_handler,
+        .user_ctx = "0"
+    };
+    httpd_register_uri_handler(server, &huang);
 
-    // /* URI handler for deleting files from server */
-    // httpd_uri_t file_delete = {
-    //     .uri = "/delete/*",   // Match all URIs of type /delete/path/to/file
-    //     .method = HTTP_POST,
-    //     .handler = delete_post_handler,
-    //     .user_ctx = NULL    // Pass server data as context
-    // };
-    // httpd_register_uri_handler(server, &file_delete);
+    huang.uri = "/huang_20";
+    huang.user_ctx = "20";
+    httpd_register_uri_handler(server, &huang);
 
-    // httpd_uri_t enable_macro = {
-    //     .uri = "/enable/*",
-    //     .method = HTTP_POST,
-    //     .handler = enable_macro_handler,
-    //     .user_ctx = server_data
-    // };
-    // httpd_register_uri_handler(server, &enable_macro);
+    huang.uri = "/huang_40";
+    huang.user_ctx = "40";
+    httpd_register_uri_handler(server, &huang);
 
-    // httpd_uri_t send_macro = {
-    //     .uri = "/send/*",
-    //     .method = HTTP_POST,
-    //     .handler = send_macro_handler,
-    //     .user_ctx = server_data
-    // };
-    // httpd_register_uri_handler(server, &send_macro);
+    huang.uri = "/huang_60";
+    huang.user_ctx = "60";
+    httpd_register_uri_handler(server, &huang);
+
+    huang.uri = "/huang_80";
+    huang.user_ctx = "80";
+    httpd_register_uri_handler(server, &huang);
+
+    huang.uri = "/huang_100";
+    huang.user_ctx = "100";
+    httpd_register_uri_handler(server, &huang);
+
+    httpd_uri_t bai = {
+        .uri = "/bai_0",
+        .method = HTTP_POST,
+        .handler = bai_handler,
+        .user_ctx = "0"
+    };
+    httpd_register_uri_handler(server, &bai);
+    
+    bai.uri = "/bai_20";
+    bai.user_ctx = "20";
+    httpd_register_uri_handler(server, &bai);
+
+    bai.uri = "/bai_40";
+    bai.user_ctx = "40";
+    httpd_register_uri_handler(server, &bai);
+
+    bai.uri = "/bai_60";
+    bai.user_ctx = "60";
+    httpd_register_uri_handler(server, &bai);
+
+    bai.uri = "/bai_80";
+    bai.user_ctx = "80";
+    httpd_register_uri_handler(server, &bai);
+
+    bai.uri = "/bai_100";
+    bai.user_ctx = "100";
+    httpd_register_uri_handler(server, &bai);
 
     return ESP_OK;
 }

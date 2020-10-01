@@ -1,32 +1,68 @@
-<table class="fixed" border="0">
-    <col width="1000px" />
-    <col width="500px" />
-    <tr>
-        <td>
-            <h2>OK Configure Server</h2>
-        </td>
-        <td>
-            <table border="0">
-                <tr>
-                    <td>
-                        <label for="newfile">Upload a file</label>
-                    </td>
-                    <td colspan="2">
-                        <input id="newfile" type="file" onchange="setpath()" style="width:100%;">
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <label for="filepath">Set path on server</label>
-                    </td>
-                    <td>
-                        <input id="filepath" type="text" style="width:100%;">
-                    </td>
-                    <td>
-                        <button id="upload" type="button" onclick="upload()">Upload</button>
-                    </td>
-                </tr>
-            </table>
-        </td>
-    </tr>
-</table>
+<!DOCTYPE html>
+<html>
+
+<body>
+    <table class="fixed" border="0">
+        <col width="1000px" />
+        <tr>
+            <td>
+                <h2>Wed Control Light</h2>
+            </td>
+        </tr>
+    </table>
+    <table class="fixed" border="1">
+        <col width="100px" />
+        <col width="100px" />
+        <col width="100px" />
+        <col width="100px" />
+        <col width="100px" />
+        <col width="100px" />
+        <col width="100px" />
+        <tbody>
+            <tr>
+                <td>»Æ</td>
+                <td>
+                    <form method="post" action="/huang_0"><button type="submit">0%</button></form>
+                </td>
+                <td>
+                    <form method="post" action="/huang_20"><button type="submit">20%</button></form>
+                </td>
+                <td>
+                    <form method="post" action="/huang_40"><button type="submit">40%</button></form>
+                </td>
+                <td>
+                    <form method="post" action="/huang_60"><button type="submit">60%</button></form>
+                </td>
+                <td>
+                    <form method="post" action="/huang_80"><button type="submit">80%</button></form>
+                </td>
+                <td>
+                    <form method="post" action="/huang_100"><button type="submit">100%</button></form>
+                </td>
+            </tr>
+            <tr>
+                <td>°×</td>
+                <td>
+                    <form method="post" action="/bai_0"><button type="submit">0%</button></form>
+                </td>
+                <td>
+                    <form method="post" action="/bai_20"><button type="submit">20%</button></form>
+                </td>
+                <td>
+                    <form method="post" action="/bai_40"><button type="submit">40%</button></form>
+                </td>
+                <td>
+                    <form method="post" action="/bai_60"><button type="submit">60%</button></form>
+                </td>
+                <td>
+                    <form method="post" action="/bai_80"><button type="submit">80%</button></form>
+                </td>
+                <td>
+                    <form method="post" action="/bai_100"><button type="submit">100%</button></form>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+
+</html>
