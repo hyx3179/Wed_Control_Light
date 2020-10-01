@@ -2,9 +2,9 @@
 
 #define HTTPD_RESP_USE_STRLEN -1
 
-#define PWM_huang   4
-#define PWM_bai   14
-#define PWM_PERIOD    (500)
+#define PWM_huang   12
+#define PWM_bai   13
+#define PWM_PERIOD    (100)
 
 esp_err_t configure_server();
 

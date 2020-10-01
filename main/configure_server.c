@@ -32,11 +32,12 @@ static esp_err_t http_resp_dir_html(httpd_req_t *req)
 
 static esp_err_t huang_handler(httpd_req_t *req)
 {
-    const char* resp_str = (const char*) req->user_ctx;
+    // const char* resp_str = (const char*) req->user_ctx;
 
-    pwm_set_duty(0,10);
+    pwm_set_duty(0,(uint32_t) req->user_ctx);
+    pwm_start();
 
-    ESP_LOGI(TAG, resp_str);
+    ESP_LOGI(TAG, "%d",(uint32_t) req->user_ctx);
     httpd_resp_set_status(req, "303 See Other");
     httpd_resp_set_hdr(req, "Location", "/");
     httpd_resp_sendstr(req, "File uploaded successfully");
@@ -45,14 +46,48 @@ static esp_err_t huang_handler(httpd_req_t *req)
 
 static esp_err_t bai_handler(httpd_req_t *req)
 {
-    const char* resp_str = (const char*) req->user_ctx;
+    // const char* resp_str = (const char*) req->user_ctx;
 
-    pwm_set_duty(1,10);
+    pwm_set_duty(1,(uint32_t) req->user_ctx);
+    pwm_start();
 
-    ESP_LOGI(TAG, resp_str);
+    ESP_LOGI(TAG, "%d",(uint32_t) req->user_ctx);
     httpd_resp_set_status(req, "303 See Other");
     httpd_resp_set_hdr(req, "Location", "/");
     httpd_resp_sendstr(req, "File uploaded successfully");
+    return ESP_OK;
+}
+
+#define MIN(a,b) (((a)<(b))?(a):(b))
+
+static esp_err_t wifi_handler(httpd_req_t *req)
+{
+    char buf[100];
+    int ret, remaining = req->content_len;
+
+    while (remaining > 0) {
+        /* Read the data for the request */
+        if ((ret = httpd_req_recv(req, buf,
+                        MIN(remaining, sizeof(buf)))) <= 0) {
+            if (ret == HTTPD_SOCK_ERR_TIMEOUT) {
+                /* Retry receiving if timeout occurred */
+                continue;
+            }
+            return ESP_FAIL;
+        }
+
+        /* Send back the same data */
+        httpd_resp_send_chunk(req, buf, ret);
+        remaining -= ret;
+
+        /* Log data received */
+        ESP_LOGI(TAG, "=========== RECEIVED DATA ==========");
+        ESP_LOGI(TAG, "%.*s", ret, buf);
+        ESP_LOGI(TAG, "====================================");
+    }
+
+    // End response
+    httpd_resp_send_chunk(req, NULL, 0);
     return ESP_OK;
 }
 
@@ -61,7 +96,7 @@ esp_err_t configure_server()
 {
     httpd_handle_t server = NULL;
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
-    config.max_uri_handlers = 14;
+    config.max_uri_handlers = 15;
 
     ESP_LOGI(TAG, "Starting HTTP Server");
     if (httpd_start(&server, &config) != ESP_OK) {
@@ -86,60 +121,68 @@ esp_err_t configure_server()
     };
     httpd_register_uri_handler(server, &favicon_get);
 
+    httpd_uri_t wifi = {
+        .uri = "/wifi",
+        .method = HTTP_POST,
+        .handler = wifi_handler,
+        .user_ctx = NULL
+    };
+    httpd_register_uri_handler(server, &wifi);
+
     httpd_uri_t huang = {
         .uri = "/huang_0",
         .method = HTTP_POST,
         .handler = huang_handler,
-        .user_ctx = "0"
+        .user_ctx = (uint32_t*) 0
     };
     httpd_register_uri_handler(server, &huang);
 
     huang.uri = "/huang_20";
-    huang.user_ctx = "20";
+    huang.user_ctx = (uint32_t*) 20;
     httpd_register_uri_handler(server, &huang);
 
     huang.uri = "/huang_40";
-    huang.user_ctx = "40";
+    huang.user_ctx = (uint32_t*) 40;
     httpd_register_uri_handler(server, &huang);
 
     huang.uri = "/huang_60";
-    huang.user_ctx = "60";
+    huang.user_ctx = (uint32_t*) 60;
     httpd_register_uri_handler(server, &huang);
 
     huang.uri = "/huang_80";
-    huang.user_ctx = "80";
+    huang.user_ctx = (uint32_t*) 80;
     httpd_register_uri_handler(server, &huang);
 
     huang.uri = "/huang_100";
-    huang.user_ctx = "100";
+    huang.user_ctx = (uint32_t*) 100;
     httpd_register_uri_handler(server, &huang);
 
     httpd_uri_t bai = {
         .uri = "/bai_0",
         .method = HTTP_POST,
         .handler = bai_handler,
-        .user_ctx = "0"
+        .user_ctx = (uint32_t*) 0
     };
     httpd_register_uri_handler(server, &bai);
     
     bai.uri = "/bai_20";
-    bai.user_ctx = "20";
+    bai.user_ctx = (uint32_t*) 20;
     httpd_register_uri_handler(server, &bai);
 
     bai.uri = "/bai_40";
-    bai.user_ctx = "40";
+    bai.user_ctx = (uint32_t*) 40;
     httpd_register_uri_handler(server, &bai);
 
     bai.uri = "/bai_60";
-    bai.user_ctx = "60";
+    bai.user_ctx = (uint32_t*) 60;
     httpd_register_uri_handler(server, &bai);
 
     bai.uri = "/bai_80";
-    bai.user_ctx = "80";
+    bai.user_ctx = (uint32_t*) 80;
     httpd_register_uri_handler(server, &bai);
 
     bai.uri = "/bai_100";
-    bai.user_ctx = "100";
+    bai.user_ctx = (uint32_t*) 100;
     httpd_register_uri_handler(server, &bai);
 
     return ESP_OK;

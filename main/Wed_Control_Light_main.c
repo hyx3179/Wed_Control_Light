@@ -14,7 +14,7 @@ const uint32_t pin_num[2] = {
 };
 
 uint32_t duties[2] = {
-    PWM_PERIOD/2, PWM_PERIOD/2
+    0, 0
 };
 
 float phase[2] = {
@@ -27,7 +27,7 @@ void app_main(void)
     pwm_init(PWM_PERIOD, duties, 2, pin_num);
     pwm_set_phases(phase);
     pwm_start();
-    
+
     esp_err_t ret;
 
     // Initialize NVS.
@@ -43,10 +43,5 @@ void app_main(void)
     /* Start the file server */
     configure_server();
 
-    // start_ble_hid_server();
-
-    // ESP_ERROR_CHECK(configure_key_scan_array());
-
-    // xTaskCreatePinnedToCore(keyboard_scan, "keyboard_scan", 2048, NULL, 0, NULL, tskNO_AFFINITY);
 
 }
